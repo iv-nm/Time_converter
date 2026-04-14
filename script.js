@@ -521,8 +521,12 @@ function setRingRotation(group, minutesOfDay) {
   group.setAttribute("transform", `rotate(${-angle} 180 180)`);
 }
 
+function getDialAngle(minutesOfDay) {
+  return (minutesOfDay / 1440) * 360;
+}
+
 function animateRingTo(group, minutesOfDay, extraTurns) {
-  const finalAngle = (minutesOfDay / 1440) * 360;
+  const finalAngle = getDialAngle(minutesOfDay);
   group.style.transition = "none";
   group.setAttribute("transform", `rotate(${-finalAngle - extraTurns} 180 180)`);
 
@@ -532,6 +536,72 @@ function animateRingTo(group, minutesOfDay, extraTurns) {
       setRingRotation(group, minutesOfDay);
     });
   });
+}
+
+function easeOutCubic(progress) {
+  return 1 - (1 - progress) ** 3;
+}
+
+function getSourceMarkerOptions(conversion, angle = getDialAngle(conversion.sourceMinutesOfDay)) {
+  return {
+    lineStartRadius: 0,
+    radius: 144,
+    labelRadius: 194,
+    angle,
+    dotRadius: 4.2,
+    dotClass: "dial-marker-dot--source",
+    labelClass: "dial-marker-label--source dial-arrow-info dial-arrow-info--source",
+    text: `${buildPlaceCode(state.sourcePlace)} ${formatDialClock(
+      conversion.instant,
+      state.sourcePlace.timezone
+    )}`
+  };
+}
+
+function getDestinationMarkerOptions(
+  conversion,
+  angle = getDialAngle(conversion.destinationMinutesOfDay)
+) {
+  return {
+    lineStartRadius: 0,
+    radius: 104,
+    labelRadius: 148,
+    angle,
+    dotRadius: 3.6,
+    dotClass: "dial-marker-dot--destination",
+    labelClass:
+      "dial-marker-label--destination dial-arrow-info dial-arrow-info--destination",
+    text: `${buildPlaceCode(state.destinationPlace)} ${formatDialClock(
+      conversion.instant,
+      state.destinationPlace.timezone
+    )}`
+  };
+}
+
+function renderDialMarkers(conversion) {
+  renderDialMarker(elements.sourceMarkerLayer, getSourceMarkerOptions(conversion));
+  renderDialMarker(
+    elements.destinationMarkerLayer,
+    getDestinationMarkerOptions(conversion)
+  );
+}
+
+function animateDialMarker(layer, buildOptions, targetAngle, extraTurns, duration = 1200) {
+  const startAngle = targetAngle - extraTurns;
+  const startTime = performance.now();
+
+  function step(now) {
+    const progress = Math.min((now - startTime) / duration, 1);
+    const angle = startAngle + (targetAngle - startAngle) * easeOutCubic(progress);
+    renderDialMarker(layer, buildOptions(angle));
+
+    if (progress < 1) {
+      window.requestAnimationFrame(step);
+    }
+  }
+
+  renderDialMarker(layer, buildOptions(startAngle));
+  window.requestAnimationFrame(step);
 }
 
 function getConversionState() {
@@ -566,8 +636,9 @@ function getConversionState() {
   };
 }
 
-function renderConversion() {
+function renderConversion(options = {}) {
   syncRevealText();
+  const { conversion: providedConversion, setRings = true, setMarkers = true } = options;
 
   if (!state.sourcePlace || !state.destinationPlace) {
     elements.alignmentTime.textContent = "";
@@ -581,7 +652,7 @@ function renderConversion() {
     return null;
   }
 
-  const conversion = getConversionState();
+  const conversion = providedConversion ?? getConversionState();
 
   if (!conversion) {
     elements.alignmentTime.textContent = "";
@@ -626,35 +697,14 @@ function renderConversion() {
     )} apart on the dial.`;
   }
 
-  setRingRotation(elements.sourceRing, conversion.sourceMinutesOfDay);
-  setRingRotation(elements.destinationRing, conversion.destinationMinutesOfDay);
-  renderDialMarker(elements.sourceMarkerLayer, {
-    lineStartRadius: 0,
-    radius: 144,
-    labelRadius: 194,
-    angle: (conversion.sourceMinutesOfDay / 1440) * 360,
-    dotRadius: 4.2,
-    dotClass: "dial-marker-dot--source",
-    labelClass: "dial-marker-label--source dial-arrow-info dial-arrow-info--source",
-    text: `${buildPlaceCode(state.sourcePlace)} ${formatDialClock(
-      conversion.instant,
-      state.sourcePlace.timezone
-    )}`
-  });
-  renderDialMarker(elements.destinationMarkerLayer, {
-    lineStartRadius: 0,
-    radius: 104,
-    labelRadius: 148,
-    angle: (conversion.destinationMinutesOfDay / 1440) * 360,
-    dotRadius: 3.6,
-    dotClass: "dial-marker-dot--destination",
-    labelClass:
-      "dial-marker-label--destination dial-arrow-info dial-arrow-info--destination",
-    text: `${buildPlaceCode(state.destinationPlace)} ${formatDialClock(
-      conversion.instant,
-      state.destinationPlace.timezone
-    )}`
-  });
+  if (setRings) {
+    setRingRotation(elements.sourceRing, conversion.sourceMinutesOfDay);
+    setRingRotation(elements.destinationRing, conversion.destinationMinutesOfDay);
+  }
+
+  if (setMarkers) {
+    renderDialMarkers(conversion);
+  }
 
   return conversion;
 }
@@ -767,9 +817,10 @@ async function handleAlign(event) {
   elements.alignTrigger.disabled = true;
 
   const prepared = await preparePlaces();
-  const conversion = prepared ? renderConversion() : null;
+  const conversion = prepared ? getConversionState() : null;
 
   if (!conversion) {
+    renderConversion({ conversion: null });
     state.isAligning = false;
     elements.alignTrigger.disabled = false;
     if (prepared) {
@@ -783,13 +834,26 @@ async function handleAlign(event) {
   );
 
   const imagePromise = refreshImages();
+  renderConversion({ conversion, setRings: false, setMarkers: false });
   setSceneState("animating");
   animateRingTo(elements.sourceRing, conversion.sourceMinutesOfDay, 720);
   animateRingTo(elements.destinationRing, conversion.destinationMinutesOfDay, 900);
+  animateDialMarker(
+    elements.sourceMarkerLayer,
+    (angle) => getSourceMarkerOptions(conversion, angle),
+    getDialAngle(conversion.sourceMinutesOfDay),
+    720
+  );
+  animateDialMarker(
+    elements.destinationMarkerLayer,
+    (angle) => getDestinationMarkerOptions(conversion, angle),
+    getDialAngle(conversion.destinationMinutesOfDay),
+    900
+  );
 
   await Promise.all([delay(1300), imagePromise]);
 
-  renderConversion();
+  renderConversion({ conversion });
   setSceneState("revealed");
   setLookupMessage(
     `${state.sourcePlace.name} and ${state.destinationPlace.name} align at the selected moment.`
