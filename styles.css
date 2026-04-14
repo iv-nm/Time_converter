@@ -316,12 +316,13 @@ h1 {
 }
 
 .dial-orbit,
-.dial-axis,
 .dial-hour-tick,
 .dial-hour-label,
 .dial-city-needle,
 .dial-city-dot,
-.dial-core-outline {
+.dial-core-ring,
+.dial-core-axis,
+.dial-core-center {
   vector-effect: non-scaling-stroke;
 }
 
@@ -342,21 +343,6 @@ h1 {
 .dial-orbit--inner {
   stroke-width: 1;
   stroke-opacity: 0.38;
-}
-
-.dial-axis {
-  stroke: rgba(255, 255, 255, 0.44);
-  stroke-width: 1.15;
-  stroke-dasharray: 2 9;
-}
-
-.dial-meridian-label {
-  fill: rgba(255, 255, 255, 0.54);
-  font-size: 8.5px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  text-anchor: middle;
-  display: none;
 }
 
 .dial-hour-tick {
@@ -411,6 +397,25 @@ h1 {
   fill: rgba(255, 255, 255, 0.62);
 }
 
+.dial-arrow-info {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  paint-order: stroke;
+  stroke: rgba(8, 9, 12, 0.88);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.dial-arrow-info--source {
+  fill: rgba(255, 255, 255, 0.96);
+}
+
+.dial-arrow-info--destination {
+  fill: rgba(255, 255, 255, 0.72);
+}
+
 .dial-city-needle {
   stroke-width: 1.9;
   stroke-linecap: round;
@@ -438,13 +443,39 @@ h1 {
 }
 
 .dial-core {
-  fill: rgba(9, 10, 13, 0.88);
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 1.2;
 }
 
-.dial-core-outline {
+.dial-core-ring {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.28);
+  stroke: rgba(255, 255, 255, 0.18);
+}
+
+.dial-core-ring--outer {
+  stroke-width: 1.35;
+}
+
+.dial-core-ring--inner {
   stroke-width: 1;
+  stroke-opacity: 0.82;
+}
+
+.dial-core-axis {
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 1;
+  stroke-dasharray: 1 10;
+}
+
+.dial-core-axis--cross {
+  stroke-opacity: 0.1;
+}
+
+.dial-core-center {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.88);
+  stroke-width: 1.6;
 }
 
 .dial-center {
@@ -493,10 +524,11 @@ h1 {
   bottom: clamp(1rem, 4vh, 2.6rem);
   width: min(92vw, 1080px);
   transform: translateX(-50%) translateY(18px);
+  position: absolute;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 1rem;
-  align-items: end;
+  align-items: start;
   opacity: 0;
   pointer-events: none;
   transition:
@@ -519,10 +551,11 @@ h1 {
 
 .reveal-copy {
   margin: 0.35rem 0 0;
-  font-family: "Fraunces", serif;
-  font-size: clamp(0.95rem, 2vw, 1.45rem);
-  line-height: 1.05;
-  color: rgba(255, 255, 255, 0.92);
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(0.88rem, 1.7vw, 1.18rem);
+  font-weight: 400;
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.66);
 }
 
 .reveal-summary {
@@ -531,13 +564,37 @@ h1 {
 
 .reveal-difference {
   display: block;
-  margin-top: 0.2rem;
-  font-size: clamp(1.15rem, 2.4vw, 1.8rem);
-  line-height: 0.95;
+  margin-top: 0.35rem;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(0.88rem, 1.7vw, 1.18rem);
+  font-weight: 400;
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.reveal-day-shift {
+  margin: 0.18rem 0 0;
 }
 
 .edit-button {
-  justify-self: end;
+  width: 3rem;
+  min-width: 3rem;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+}
+
+.edit-button__icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .scene--animating .compose-shell,
@@ -645,7 +702,8 @@ h1 {
   }
 
   .edit-button {
-    justify-self: start;
+    right: 0;
+    bottom: -0.25rem;
   }
 }
 

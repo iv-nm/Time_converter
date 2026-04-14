@@ -28,7 +28,8 @@ const elements = {
   destinationHeading: document.querySelector("#destination-heading"),
   sourcePreview: document.querySelector("#source-preview"),
   destinationPreview: document.querySelector("#destination-preview"),
-  differencePreview: document.querySelector("#difference-preview")
+  differencePreview: document.querySelector("#difference-preview"),
+  differenceDayShift: document.querySelector("#difference-day-shift")
 };
 
 const state = {
@@ -139,6 +140,11 @@ function formatShortClock(date, timeZone) {
   }).format(date);
 }
 
+function formatDialClock(date, timeZone) {
+  const parts = getParts(date, timeZone);
+  return `${parts.hour}:${parts.minute}`;
+}
+
 function formatOffset(minutes) {
   const sign = minutes >= 0 ? "+" : "-";
   const absolute = Math.abs(minutes);
@@ -173,23 +179,41 @@ function describeDayShift(sourceInstant, sourcePlace, destinationPlace) {
   const delta = Math.round((destinationStamp - sourceStamp) / 86400000);
 
   if (delta === 0) {
-    return "same day";
+    return "Same Day";
   }
 
   if (delta === 1) {
-    return "next day";
+    return "Next Day";
   }
 
   if (delta === -1) {
-    return "previous day";
+    return "Previous Day";
   }
 
-  return delta > 0 ? `+${delta} days` : `${delta} days`;
+  return delta > 0 ? `+${delta} Days` : `${delta} Days`;
 }
 
 function buildPlaceLabel(place) {
   const region = place.admin1 ? `${place.admin1}, ` : "";
   return `${place.name}, ${region}${place.country}`;
+}
+
+function buildPlaceCode(place) {
+  const words = place.name
+    .split(/[\s-]+/)
+    .map((part) => part.replace(/[^A-Za-z]/g, ""))
+    .filter(Boolean);
+
+  if (words.length >= 2) {
+    return words
+      .slice(0, 3)
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase();
+  }
+
+  const condensed = words[0] || place.name.replace(/[^A-Za-z]/g, "");
+  return condensed.slice(0, 3).toUpperCase();
 }
 
 function normalizePlaceText(value) {
@@ -390,6 +414,10 @@ function buildDialRing(group, options) {
     group.append(label);
   }
 
+  if (options.showNeedle === false) {
+    return;
+  }
+
   group.append(
     createSvgElement("line", {
       x1: 180,
@@ -415,29 +443,43 @@ function renderDialMarker(layer, options) {
   clearMarkerLayer(layer);
 
   const point = polarToCartesian(options.radius, options.angle);
-  const labelPoint = polarToCartesian(options.labelRadius, options.angle);
-  const anchor = labelPoint.x >= 180 ? "start" : "end";
-  const xOffset = anchor === "start" ? 8 : -8;
-
-  layer.append(
-    createSvgElement("line", {
-      x1: point.x,
-      y1: point.y,
-      x2: labelPoint.x,
-      y2: labelPoint.y,
-      class: "dial-marker-connector"
-    }),
-    createSvgElement("circle", {
-      cx: point.x,
-      cy: point.y,
-      r: options.dotRadius,
-      class: `dial-marker-dot ${options.dotClass}`.trim()
-    })
+  const lineStart = polarToCartesian(options.lineStartRadius ?? options.radius, options.angle);
+  const labelPoint = polarToCartesian(
+    options.labelRadius ?? options.radius,
+    options.angle
   );
+  const anchor =
+    options.textAnchor ?? (labelPoint.x >= 180 ? "start" : "end");
+  const xOffset =
+    options.labelOffsetX ?? (anchor === "start" ? 8 : anchor === "end" ? -8 : 0);
+  const yOffset = options.labelOffsetY ?? 0;
+
+  if (options.showConnector !== false) {
+    layer.append(
+      createSvgElement("line", {
+        x1: lineStart.x,
+        y1: lineStart.y,
+        x2: labelPoint.x,
+        y2: labelPoint.y,
+        class: "dial-marker-connector"
+      })
+    );
+  }
+
+  if (options.showDot !== false) {
+    layer.append(
+      createSvgElement("circle", {
+        cx: point.x,
+        cy: point.y,
+        r: options.dotRadius,
+        class: `dial-marker-dot ${options.dotClass}`.trim()
+      })
+    );
+  }
 
   const label = createSvgElement("text", {
     x: labelPoint.x + xOffset,
-    y: labelPoint.y,
+    y: labelPoint.y + yOffset,
     class: `dial-marker-label ${options.labelClass}`.trim(),
     "text-anchor": anchor,
     "dominant-baseline": "central"
@@ -452,6 +494,7 @@ function initializeDial() {
     labelRadius: 132,
     labelEvery: 2,
     labelClass: "",
+    showNeedle: false,
     needleY: 48,
     needleClass: "dial-city-needle--source",
     dotY: 36,
@@ -464,6 +507,7 @@ function initializeDial() {
     labelRadius: 100,
     labelEvery: 3,
     labelClass: "dial-hour-label--destination",
+    showNeedle: false,
     needleY: 88,
     needleClass: "dial-city-needle--destination",
     dotY: 76,
@@ -531,6 +575,7 @@ function renderConversion() {
     elements.sourcePreview.textContent = "";
     elements.destinationPreview.textContent = "";
     elements.differencePreview.textContent = "";
+    elements.differenceDayShift.textContent = "";
     clearMarkerLayer(elements.sourceMarkerLayer);
     clearMarkerLayer(elements.destinationMarkerLayer);
     return null;
@@ -544,6 +589,7 @@ function renderConversion() {
     elements.sourcePreview.textContent = "";
     elements.destinationPreview.textContent = "";
     elements.differencePreview.textContent = "";
+    elements.differenceDayShift.textContent = "";
     clearMarkerLayer(elements.sourceMarkerLayer);
     clearMarkerLayer(elements.destinationMarkerLayer);
     return null;
@@ -557,10 +603,15 @@ function renderConversion() {
     conversion.instant,
     state.destinationPlace.timezone
   )} • ${formatOffset(conversion.destinationOffset)}`;
-  elements.differencePreview.textContent = `${formatDifference(
+  elements.differencePreview.textContent = formatDifference(
     conversion.sourceOffset,
     conversion.destinationOffset
-  )} • ${describeDayShift(conversion.instant, state.sourcePlace, state.destinationPlace)}`;
+  );
+  elements.differenceDayShift.textContent = describeDayShift(
+    conversion.instant,
+    state.sourcePlace,
+    state.destinationPlace
+  );
   if (state.scene === "revealed") {
     elements.alignmentTime.textContent = `${formatShortClock(
       conversion.instant,
@@ -578,22 +629,31 @@ function renderConversion() {
   setRingRotation(elements.sourceRing, conversion.sourceMinutesOfDay);
   setRingRotation(elements.destinationRing, conversion.destinationMinutesOfDay);
   renderDialMarker(elements.sourceMarkerLayer, {
+    lineStartRadius: 0,
     radius: 144,
-    labelRadius: 172,
-    angle: 0,
+    labelRadius: 194,
+    angle: (conversion.sourceMinutesOfDay / 1440) * 360,
     dotRadius: 4.2,
     dotClass: "dial-marker-dot--source",
-    labelClass: "dial-marker-label--source",
-    text: state.sourcePlace.name
+    labelClass: "dial-marker-label--source dial-arrow-info dial-arrow-info--source",
+    text: `${buildPlaceCode(state.sourcePlace)} ${formatDialClock(
+      conversion.instant,
+      state.sourcePlace.timezone
+    )}`
   });
   renderDialMarker(elements.destinationMarkerLayer, {
+    lineStartRadius: 0,
     radius: 104,
-    labelRadius: 132,
-    angle: 0,
+    labelRadius: 148,
+    angle: (conversion.destinationMinutesOfDay / 1440) * 360,
     dotRadius: 3.6,
     dotClass: "dial-marker-dot--destination",
-    labelClass: "dial-marker-label--destination",
-    text: state.destinationPlace.name
+    labelClass:
+      "dial-marker-label--destination dial-arrow-info dial-arrow-info--destination",
+    text: `${buildPlaceCode(state.destinationPlace)} ${formatDialClock(
+      conversion.instant,
+      state.destinationPlace.timezone
+    )}`
   });
 
   return conversion;

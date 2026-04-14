@@ -87,14 +87,16 @@
             <circle class="dial-orbit dial-orbit--outer" cx="180" cy="180" r="152"></circle>
             <circle class="dial-orbit dial-orbit--middle" cx="180" cy="180" r="118"></circle>
             <circle class="dial-orbit dial-orbit--inner" cx="180" cy="180" r="58"></circle>
-            <line class="dial-axis" x1="180" y1="24" x2="180" y2="336"></line>
-            <text class="dial-meridian-label" x="180" y="14">meeting line</text>
             <g id="source-ring"></g>
             <g id="destination-ring"></g>
             <g id="source-marker-layer"></g>
             <g id="destination-marker-layer"></g>
-            <circle class="dial-core" cx="180" cy="180" r="40"></circle>
-            <circle class="dial-core-outline" cx="180" cy="180" r="48"></circle>
+            <circle class="dial-core" cx="180" cy="180" r="38"></circle>
+            <circle class="dial-core-ring dial-core-ring--outer" cx="180" cy="180" r="48"></circle>
+            <circle class="dial-core-ring dial-core-ring--inner" cx="180" cy="180" r="31"></circle>
+            <line class="dial-core-axis" x1="180" y1="131" x2="180" y2="229"></line>
+            <line class="dial-core-axis dial-core-axis--cross" x1="131" y1="180" x2="229" y2="180"></line>
+            <circle class="dial-core-center" cx="180" cy="180" r="5"></circle>
           </svg>
 
           <div class="dial-center">
@@ -122,11 +124,18 @@
 
         <div class="reveal-summary">
           <p class="reveal-label">Difference</p>
+          <p id="difference-day-shift" class="reveal-city reveal-day-shift"></p>
           <strong id="difference-preview" class="reveal-difference"></strong>
         </div>
 
-        <button id="edit-trigger" class="edit-button" type="button">
-          Edit moment
+        <button id="edit-trigger" class="edit-button" type="button" aria-label="Edit moment">
+          <span class="sr-only">Edit moment</span>
+          <svg class="edit-button__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M4 20l4.2-1.1L18.6 8.5a1.8 1.8 0 0 0 0-2.6l-.5-.5a1.8 1.8 0 0 0-2.6 0L5.1 15.8 4 20z"
+            ></path>
+            <path d="M13.9 6.9l3.2 3.2"></path>
+          </svg>
         </button>
       </section>
     </main>
