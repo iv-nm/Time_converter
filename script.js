@@ -580,7 +580,7 @@ function renderConversion() {
   renderDialMarker(elements.sourceMarkerLayer, {
     radius: 144,
     labelRadius: 172,
-    angle: (conversion.sourceMinutesOfDay / 1440) * 360,
+    angle: 0,
     dotRadius: 4.2,
     dotClass: "dial-marker-dot--source",
     labelClass: "dial-marker-label--source",
@@ -589,7 +589,7 @@ function renderConversion() {
   renderDialMarker(elements.destinationMarkerLayer, {
     radius: 104,
     labelRadius: 132,
-    angle: (conversion.destinationMinutesOfDay / 1440) * 360,
+    angle: 0,
     dotRadius: 3.6,
     dotClass: "dial-marker-dot--destination",
     labelClass: "dial-marker-label--destination",
