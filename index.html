@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Where Cities Meet</title>
+    <meta
+      name="description"
+      content="A static time converter that animates two cities onto a shared clock before revealing their blended view."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="app" class="scene scene--compose">
+      <div class="paper-backdrop" aria-hidden="true"></div>
+      <div class="grain-layer" aria-hidden="true"></div>
+
+      <div class="reveal-layers" aria-hidden="true">
+        <div id="source-visual" class="city-layer city-layer--top"></div>
+        <div id="destination-visual" class="city-layer city-layer--bottom"></div>
+        <div class="scene-wash"></div>
+      </div>
+
+      <section class="compose-shell">
+        <form id="align-form" class="input-line">
+          <label class="line-field">
+            <span class="sr-only">Source city</span>
+            <input
+              id="source-city-input"
+              type="text"
+              list="source-city-suggestions"
+              placeholder="Edmonton"
+              autocomplete="off"
+            />
+          </label>
+
+          <span class="line-token">to</span>
+
+          <label class="line-field line-field--date">
+            <span class="sr-only">Date</span>
+            <input id="source-date" type="date" />
+          </label>
+
+          <label class="line-field line-field--time">
+            <span class="sr-only">Time</span>
+            <input id="source-time" type="time" step="60" />
+          </label>
+
+          <label class="line-field">
+            <span class="sr-only">Destination city</span>
+            <input
+              id="destination-city-input"
+              type="text"
+              list="destination-city-suggestions"
+              placeholder="Tokyo"
+              autocomplete="off"
+            />
+          </label>
+
+          <button id="align-trigger" class="align-button" type="submit">
+            Align
+          </button>
+
+          <datalist id="source-city-suggestions"></datalist>
+          <datalist id="destination-city-suggestions"></datalist>
+        </form>
+
+        <p id="lookup-status" class="lookup-status" aria-live="polite"></p>
+      </section>
+
+      <section class="clock-stage" aria-labelledby="dial-title">
+        <div class="dial-stage">
+          <svg
+            id="meeting-dial"
+            class="dial-svg"
+            viewBox="0 0 360 360"
+            role="img"
+            aria-labelledby="dial-title"
+          >
+            <title id="dial-title">Clock showing where two city times meet</title>
+            <circle class="dial-orbit dial-orbit--outer" cx="180" cy="180" r="152"></circle>
+            <circle class="dial-orbit dial-orbit--middle" cx="180" cy="180" r="118"></circle>
+            <circle class="dial-orbit dial-orbit--inner" cx="180" cy="180" r="58"></circle>
+            <line class="dial-axis" x1="180" y1="24" x2="180" y2="336"></line>
+            <text class="dial-meridian-label" x="180" y="14">meeting line</text>
+            <g id="source-ring"></g>
+            <g id="destination-ring"></g>
+            <g id="source-marker-layer"></g>
+            <g id="destination-marker-layer"></g>
+            <circle class="dial-core" cx="180" cy="180" r="40"></circle>
+            <circle class="dial-core-outline" cx="180" cy="180" r="48"></circle>
+          </svg>
+
+          <div class="dial-center">
+            <p class="dial-kicker">Alignment</p>
+            <strong id="alignment-time" class="dial-time"></strong>
+            <p id="alignment-detail" class="dial-detail"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="reveal-meta" aria-live="polite">
+        <div class="reveal-headings">
+          <div>
+            <p class="reveal-label">Source</p>
+            <h2 id="source-heading" class="reveal-city"></h2>
+            <p id="source-preview" class="reveal-copy"></p>
+          </div>
+
+          <div>
+            <p class="reveal-label">Destination</p>
+            <h2 id="destination-heading" class="reveal-city"></h2>
+            <p id="destination-preview" class="reveal-copy"></p>
+          </div>
+        </div>
+
+        <div class="reveal-summary">
+          <p class="reveal-label">Difference</p>
+          <strong id="difference-preview" class="reveal-difference"></strong>
+        </div>
+
+        <button id="edit-trigger" class="edit-button" type="button">
+          Edit moment
+        </button>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
